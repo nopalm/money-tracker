@@ -76,17 +76,44 @@ function populateSubCategories(selectedSub = null) {
 
 document.getElementById('tx-major').addEventListener('change', () => populateSubCategories());
 
-// Charts Setup
+// Charts Setup (Monochrome palette)
 let incomeExpenseChart = new Chart(document.getElementById('incomeExpenseChart').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: ['Income', 'Expense'], datasets: [{ data: [0, 0], backgroundColor: ['#10b981', '#ef4444'] }] },
-    options: { responsive: true, maintainAspectRatio: false }
+    data: { 
+        labels: ['Income', 'Expense'], 
+        datasets: [{ 
+            data: [0, 0], 
+            backgroundColor: ['#111111', '#d4d4d4'],
+            borderColor: '#ffffff',
+            borderWidth: 2
+        }] 
+    },
+    options: { 
+        responsive: true, 
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { font: { family: 'sans-serif', size: 10 }, boxWidth: 12 } } }
+    }
 });
 
 let categoryChart = new Chart(document.getElementById('categoryChart').getContext('2d'), {
     type: 'bar',
-    data: { labels: [], datasets: [{ label: 'Major Category (Rp)', data: [], backgroundColor: '#6366f1' }] },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    data: { 
+        labels: [], 
+        datasets: [{ 
+            label: 'Major Category (Rp)', 
+            data: [], 
+            backgroundColor: '#111111' 
+        }] 
+    },
+    options: { 
+        responsive: true, 
+        maintainAspectRatio: false, 
+        scales: { 
+            y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        },
+        plugins: { legend: { display: false } }
+    }
 });
 
 // Fetch Data from Supabase
@@ -100,12 +127,12 @@ async function loadData() {
 
     if (catRes.error || txRes.error) {
         syncStatus.textContent = "Sync Error";
-        syncStatus.className = "text-xs bg-red-700 text-white px-2.5 py-1 rounded-full font-medium";
+        syncStatus.className = "text-[10px] uppercase tracking-wider bg-zinc-800 border border-zinc-600 text-white px-3 py-1 rounded-full font-medium";
     } else {
         categoriesList = catRes.data || [];
         transactions = txRes.data || [];
         syncStatus.textContent = "Synced";
-        syncStatus.className = "text-xs bg-green-700 text-white px-2.5 py-1 rounded-full font-medium";
+        syncStatus.className = "text-[10px] uppercase tracking-wider bg-zinc-900 border border-zinc-700 text-zinc-300 px-3 py-1 rounded-full font-medium";
         renderCategoriesTable();
         renderApp();
     }
@@ -147,14 +174,14 @@ function renderCategoriesTable() {
     tbody.innerHTML = '';
     categoriesList.forEach(c => {
         const tr = document.createElement('tr');
-        tr.className = 'border-b hover:bg-gray-50';
+        tr.className = 'hover:bg-zinc-50';
         tr.innerHTML = `
-            <td class="py-2 text-xs"><span class="px-2 py-0.5 rounded ${c.type === 'income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${c.type}</span></td>
-            <td class="py-2 font-medium text-xs">${c.major}</td>
-            <td class="py-2 text-xs text-gray-500">${c.sub}</td>
-            <td class="py-2 text-right space-x-2">
-                <button onclick='toggleCategoryModal(true, ${JSON.stringify(c)})' class="text-indigo-600 hover:underline text-xs">Edit</button>
-                <button onclick="deleteCategory(${c.id})" class="text-red-600 hover:underline text-xs">Delete</button>
+            <td class="py-2.5 text-[10px] uppercase tracking-wider"><span class="px-2 py-0.5 border ${c.type === 'income' ? 'border-black text-black font-semibold' : 'border-zinc-300 text-zinc-500'}">${c.type}</span></td>
+            <td class="py-2.5 font-medium text-xs text-black">${c.major}</td>
+            <td class="py-2.5 text-xs text-zinc-500">${c.sub}</td>
+            <td class="py-2.5 text-right space-x-3">
+                <button onclick='toggleCategoryModal(true, ${JSON.stringify(c)})' class="text-black hover:underline text-[10px] uppercase tracking-wider font-semibold">Edit</button>
+                <button onclick="deleteCategory(${c.id})" class="text-zinc-400 hover:text-black hover:underline text-[10px] uppercase tracking-wider font-semibold">Delete</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -227,16 +254,16 @@ function renderApp() {
         }
 
         const tr = document.createElement('tr');
-        tr.className = 'border-b hover:bg-gray-50';
+        tr.className = 'hover:bg-zinc-50';
         tr.innerHTML = `
-            <td class="py-2.5 text-xs text-gray-500">${t.date}</td>
-            <td class="py-2.5"><span class="px-2 py-0.5 rounded text-xs ${t.type === 'income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${t.type}</span></td>
-            <td class="py-2.5 font-medium text-xs"><b>${t.major_category}</b> <span class="text-gray-400">/ ${t.sub_category}</span></td>
-            <td class="py-2.5 text-xs text-gray-500">${t.payment_method || 'Cash'}</td>
-            <td class="py-2.5 font-bold text-xs ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}">${t.type === 'income' ? '+' : '-'}${formatRp(amt)}</td>
-            <td class="py-2.5 text-right space-x-2">
-                <button onclick='openTransactionModal(${JSON.stringify(t)})' class="text-indigo-600 hover:underline text-xs">Edit</button>
-                <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:underline text-xs">Delete</button>
+            <td class="py-3 text-xs text-zinc-500">${t.date}</td>
+            <td class="py-3 text-[10px] uppercase tracking-wider"><span class="px-2 py-0.5 border ${t.type === 'income' ? 'border-black text-black font-semibold' : 'border-zinc-300 text-zinc-500'}">${t.type}</span></td>
+            <td class="py-3 font-medium text-xs text-black"><b>${t.major_category}</b> <span class="text-zinc-400 font-light">/ ${t.sub_category}</span></td>
+            <td class="py-3 text-xs text-zinc-500">${t.payment_method || 'Cash'}</td>
+            <td class="py-3 font-medium text-xs text-black">${t.type === 'income' ? '+' : '-'}${formatRp(amt)}</td>
+            <td class="py-3 text-right space-x-3">
+                <button onclick='openTransactionModal(${JSON.stringify(t)})' class="text-black hover:underline text-[10px] uppercase tracking-wider font-semibold">Edit</button>
+                <button onclick="deleteTransaction(${t.id})" class="text-zinc-400 hover:text-black hover:underline text-[10px] uppercase tracking-wider font-semibold">Delete</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -247,7 +274,6 @@ function renderApp() {
     const net = totalIncome - totalExpense;
     const netEl = document.getElementById('net-balance');
     netEl.textContent = formatRp(net);
-    netEl.className = `text-2xl font-bold mt-1 ${net >= 0 ? 'text-indigo-600' : 'text-red-600'}`;
 
     incomeExpenseChart.data.datasets[0].data = [totalIncome, totalExpense];
     incomeExpenseChart.update();
@@ -275,30 +301,30 @@ function renderOverspending(currentMajorTotals) {
         if (spent > 0) {
             hasAlerts = true;
             const div = document.createElement('div');
-            div.className = 'p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm';
+            div.className = 'p-3 bg-zinc-50 border border-zinc-200 text-xs';
             div.innerHTML = `
-                <div class="flex justify-between mb-1">
-                    <span class="font-semibold text-gray-700">${cat}</span>
-                    <span class="${isOver ? 'text-red-600 font-bold' : 'text-gray-500'}">${formatRp(spent)} / Avg: ${formatRp(avg)} <span class="text-xs">(${diffPercent >= 0 ? '+' : ''}${diffPercent.toFixed(1)}%)</span></span>
+                <div class="flex justify-between mb-2">
+                    <span class="font-bold text-black uppercase tracking-wider">${cat}</span>
+                    <span class="${isOver ? 'text-black font-bold underline' : 'text-zinc-600'}">${formatRp(spent)} / Avg: ${formatRp(avg)} <span class="text-[10px]">(${diffPercent >= 0 ? '+' : ''}${diffPercent.toFixed(1)}%)</span></span>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="${isOver ? 'bg-red-500' : 'bg-indigo-500'} h-2 rounded-full" style="width: ${Math.min((spent / avg) * 100, 100)}%"></div>
+                <div class="w-full bg-zinc-200 h-1">
+                    <div class="${isOver ? 'bg-black' : 'bg-zinc-500'} h-1" style="width: ${Math.min((spent / avg) * 100, 100)}%"></div>
                 </div>
-                ${isOver ? '<p class="text-xs text-red-500 mt-1 font-medium">🔴 Overspending detected relative to baseline!</p>' : ''}
+                ${isOver ? '<p class="text-[10px] text-black tracking-widest uppercase mt-2 font-bold">&bull; Over baseline threshold</p>' : ''}
             `;
             container.appendChild(div);
         }
     }
 
     if (!hasAlerts) {
-        container.innerHTML = '<p class="text-sm text-gray-400">No expense records found.</p>';
+        container.innerHTML = '<p class="text-xs text-zinc-400 font-light">No expense records found.</p>';
     }
 }
 
 function setReportMode(mode) {
     reportMode = mode;
-    document.getElementById('btn-weekly').className = mode === 'weekly' ? 'px-3 py-1 text-xs rounded-md bg-white shadow-sm font-medium text-indigo-600 transition' : 'px-3 py-1 text-xs rounded-md text-gray-600 font-medium transition';
-    document.getElementById('btn-monthly').className = mode === 'monthly' ? 'px-3 py-1 text-xs rounded-md bg-white shadow-sm font-medium text-indigo-600 transition' : 'px-3 py-1 text-xs rounded-md text-gray-600 font-medium transition';
+    document.getElementById('btn-weekly').className = mode === 'weekly' ? 'px-3 py-1 text-[10px] uppercase tracking-wider bg-black text-white font-semibold transition' : 'px-3 py-1 text-[10px] uppercase tracking-wider text-zinc-600 font-semibold transition';
+    document.getElementById('btn-monthly').className = mode === 'monthly' ? 'px-3 py-1 text-[10px] uppercase tracking-wider bg-black text-white font-semibold transition' : 'px-3 py-1 text-[10px] uppercase tracking-wider text-zinc-600 font-semibold transition';
     renderReports();
 }
 
@@ -320,7 +346,7 @@ function renderReports() {
 
     const keys = Object.keys(grouped).sort().reverse();
     if (keys.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="py-3 text-gray-400 text-center text-xs">No records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="py-3 text-zinc-400 text-center text-xs font-light">No records found.</td></tr>`;
         return;
     }
 
@@ -329,12 +355,12 @@ function renderReports() {
         const net = item.income - item.expense;
         const savingsRate = item.income > 0 ? ((net / item.income) * 100).toFixed(1) : 0;
         const tr = document.createElement('tr');
-        tr.className = 'border-b';
+        tr.className = 'hover:bg-zinc-50';
         tr.innerHTML = `
-            <td class="py-2.5 font-medium text-xs">${k}</td>
-            <td class="py-2.5 text-green-600 text-xs">+${formatRp(item.income)}</td>
-            <td class="py-2.5 text-red-600 text-xs">-${formatRp(item.expense)}</td>
-            <td class="py-2.5 text-xs font-bold ${net >= 0 ? 'text-indigo-600' : 'text-red-600'}">${formatRp(net)} <span class="text-[10px] text-gray-400 font-normal">(${savingsRate}% savings)</span></td>
+            <td class="py-3 font-medium text-xs text-black">${k}</td>
+            <td class="py-3 text-black text-xs">+${formatRp(item.income)}</td>
+            <td class="py-3 text-zinc-500 text-xs">-${formatRp(item.expense)}</td>
+            <td class="py-3 text-xs font-bold text-black">${formatRp(net)} <span class="text-[10px] text-zinc-400 font-light">(${savingsRate}% savings)</span></td>
         `;
         tbody.appendChild(tr);
     });

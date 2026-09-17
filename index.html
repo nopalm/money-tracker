@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Finance & Category CRUD Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen pb-24">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-4 shadow-md sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold">💰 Finance & Categories Manager</h1>
+            <span id="sync-status" class="text-xs bg-indigo-700 text-white px-2.5 py-1 rounded-full font-medium">Connecting...</span>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+
+        <!-- Financial Overview Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Income</p>
+                <h3 id="total-income" class="text-2xl font-bold text-green-600 mt-1">Rp 0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Expense</p>
+                <h3 id="total-expense" class="text-2xl font-bold text-red-600 mt-1">Rp 0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Net Balance</p>
+                <h3 id="net-balance" class="text-2xl font-bold text-indigo-600 mt-1">Rp 0</h3>
+            </div>
+        </section>
+
+        <!-- Category Management Section (CRUD for Categories) -->
+        <section class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-sm font-semibold text-gray-700">⚙️ Manage Categories (Major & Sub-Categories)</h2>
+                <button onclick="toggleCategoryModal(true)" class="bg-gray-100 hover:bg-gray-200 text-indigo-600 px-3 py-1.5 rounded-lg text-xs font-medium transition">+ Add Category</button>
+            </div>
+            <div class="overflow-x-auto max-h-48">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b text-gray-400 text-xs uppercase">
+                            <th class="pb-2">Type</th>
+                            <th class="pb-2">Major Category</th>
+                            <th class="pb-2">Sub-Category</th>
+                            <th class="pb-2 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="category-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Charts Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700 mb-3">Income vs Expense Trend</h2>
+                <div class="h-64"><canvas id="incomeExpenseChart"></canvas></div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700 mb-3">Spending by Major Category</h2>
+                <div class="h-64"><canvas id="categoryChart"></canvas></div>
+            </div>
+        </section>
+
+        <!-- Overspending Analysis Section -->
+        <section class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-700 mb-3">⚠️ Overspending Tracker</h2>
+            <div id="overspending-alert-container" class="space-y-3"></div>
+        </section>
+
+        <!-- Reports Section -->
+        <section class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-semibold text-gray-700">Audit Reports</h2>
+                <div class="space-x-1 bg-gray-100 p-1 rounded-lg">
+                    <button onclick="setReportMode('weekly')" id="btn-weekly" class="px-3 py-1 text-xs rounded-md bg-white shadow-sm font-medium text-indigo-600 transition">Weekly</button>
+                    <button onclick="setReportMode('monthly')" id="btn-monthly" class="px-3 py-1 text-xs rounded-md text-gray-600 font-medium transition">Monthly</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b text-gray-400 text-xs uppercase">
+                            <th class="pb-2">Period</th>
+                            <th class="pb-2">Income</th>
+                            <th class="pb-2">Expense</th>
+                            <th class="pb-2">Net / Savings Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Transaction History -->
+        <section class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-700 mb-4">Transaction History</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b text-gray-400 text-xs uppercase">
+                            <th class="pb-2">Date</th>
+                            <th class="pb-2">Type</th>
+                            <th class="pb-2">Category</th>
+                            <th class="pb-2">Method</th>
+                            <th class="pb-2">Amount</th>
+                            <th class="pb-2 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Global Floating Action Button -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <button onclick="openTransactionModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-full shadow-lg flex items-center space-x-2 font-medium text-sm transition transform hover:scale-105">
+            <span class="text-lg font-bold">+</span>
+            <span>Add Transaction</span>
+        </button>
+    </div>
+
+    <!-- Modal Form Component: Transaction CRUD -->
+    <div id="transaction-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="tx-modal-title" class="font-bold text-gray-800 text-lg">New Transaction</h3>
+                <button onclick="toggleTransactionModal(false)" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+            </div>
+            
+            <form id="transaction-form" class="space-y-3">
+                <input type="hidden" id="tx-id">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                    <select id="tx-type" onchange="populateMajorCategories()" class="w-full border rounded-lg p-2.5 text-sm bg-white">
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Major Category</label>
+                        <select id="tx-major" onchange="populateSubCategories()" class="w-full border rounded-lg p-2.5 text-sm bg-white"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Sub-Category</label>
+                        <select id="tx-sub" class="w-full border rounded-lg p-2.5 text-sm bg-white"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Amount (Rp)</label>
+                        <input type="number" id="tx-amount" step="1000" required placeholder="0" class="w-full border rounded-lg p-2.5 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                        <input type="date" id="tx-date" required class="w-full border rounded-lg p-2.5 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Payment Method</label>
+                        <select id="tx-method" class="w-full border rounded-lg p-2.5 text-sm bg-white">
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="E-Wallet">E-Wallet</option>
+                            <option value="Credit Card">Credit Card</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center pt-5">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="tx-recurring" class="rounded border-gray-300 text-indigo-600 h-4 w-4">
+                            <span class="text-xs font-medium text-gray-700">Recurring</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                    <input type="text" id="tx-desc" placeholder="Optional notes..." class="w-full border rounded-lg p-2.5 text-sm">
+                </div>
+
+                <div class="pt-2 flex space-x-3">
+                    <button type="button" onclick="toggleTransactionModal(false)" class="w-1/2 bg-gray-100 text-gray-700 rounded-lg py-2.5 text-sm font-medium">Cancel</button>
+                    <button type="submit" class="w-1/2 bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium">Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Form Component: Category CRUD -->
+    <div id="category-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="cat-modal-title" class="font-bold text-gray-800 text-lg">Add Category</h3>
+                <button onclick="toggleCategoryModal(false)" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+            </div>
+            
+            <form id="category-form" class="space-y-3">
+                <input type="hidden" id="cat-id">
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                    <select id="cat-type" class="w-full border rounded-lg p-2.5 text-sm bg-white">
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Major Category Name</label>
+                    <input type="text" id="cat-major" required placeholder="e.g. Food, Bills" class="w-full border rounded-lg p-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Sub-Category Name</label>
+                    <input type="text" id="cat-sub" required placeholder="e.g. Groceries" class="w-full border rounded-lg p-2.5 text-sm">
+                </div>
+                <div class="pt-2 flex space-x-3">
+                    <button type="button" onclick="toggleCategoryModal(false)" class="w-1/2 bg-gray-100 text-gray-700 rounded-lg py-2.5 text-sm font-medium">Cancel</button>
+                    <button type="submit" class="w-1/2 bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-medium">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
